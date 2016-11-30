@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.supertramp.multimedia_android">
 
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -15,6 +19,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".TakePictureActivity"/>
+        <activity android:name=".AudioRecordActivity"/>
+        <activity android:name=".VideoRecordActivity"/>
+        <activity android:name=".VideoCodecActivity"/>
+        <activity android:name=".Camera2CodecActivity"/>
     </application>
 
 </manifest>
