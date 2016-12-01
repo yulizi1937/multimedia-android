@@ -3,24 +3,20 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.supertramp.camera2library.widget.AutoFitTextureView
-        android:id="@+id/textureview"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
     <Button
         android:id="@+id/btn_start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:text="开始"/>
+        android:layout_centerInParent="true"
+        android:text="开始截屏"/>
 
     <Button
         android:id="@+id/btn_stop"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_toRightOf="@id/btn_start"
-        android:layout_alignParentBottom="true"
-        android:text="结束"/>
+        android:layout_below="@id/btn_start"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"
+        android:text="结束截屏"/>
 
 </RelativeLayout>

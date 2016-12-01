@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraDevice;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
@@ -12,6 +13,8 @@ import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 import android.view.TextureView;
+import android.view.View;
+import android.widget.Button;
 import com.supertramp.camera2library.basic.Camera2Util;
 import com.supertramp.camera2library.widget.AutoFitTextureView;
 import java.io.BufferedOutputStream;
@@ -23,7 +26,7 @@ import java.nio.ByteBuffer;
 /**
  * Created by supertramp on 16/11/30.
  */
-public class Camera2CodecActivity extends Activity implements TextureView.SurfaceTextureListener {
+public class Camera2CodecActivity extends Activity implements TextureView.SurfaceTextureListener, View.OnClickListener {
 
     private AutoFitTextureView textureView;
     private Camera2Util mCamera2Util;
@@ -31,6 +34,8 @@ public class Camera2CodecActivity extends Activity implements TextureView.Surfac
     private Surface mCodecSurface;
     private byte[] configBytes;
     private BufferedOutputStream outputStream;
+    private Button btnStart;
+    private Button btnStop;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -48,6 +53,8 @@ public class Camera2CodecActivity extends Activity implements TextureView.Surfac
     private void initView()
     {
         textureView = (AutoFitTextureView) findViewById(R.id.textureview);
+        btnStart = (Button) findViewById(R.id.btn_start);
+        btnStop = (Button) findViewById(R.id.btn_stop);
     }
 
     private void initData()
@@ -68,7 +75,57 @@ public class Camera2CodecActivity extends Activity implements TextureView.Surfac
 
     private void initListener()
     {
+        mCamera2Util.setCameraStateCallback(new CameraDevice.StateCallback()
+        {
+            @Override
+            public void onOpened(CameraDevice cameraDevice)
+            {
+                try
+                {
+
+                    initCodec(mCamera2Util.getPreviewSize());
+                    mCamera2Util.setCameraDevice(cameraDevice);
+                    mCamera2Util.createCodecSession(mCodecSurface);
+
+                }catch (CameraAccessException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onDisconnected(CameraDevice cameraDevice)
+            {
+
+            }
+
+            @Override
+            public void onError(CameraDevice cameraDevice, int i)
+            {
+
+            }
+        });
         textureView.setSurfaceTextureListener(this);
+
+        btnStart.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view)
+            {
+
+                try
+                {
+
+                    startCodec();
+                    mCamera2Util.startRecord();
+
+                }catch (CameraAccessException e)
+                {
+                    e.printStackTrace();
+                }
+
+            }
+        });
+        btnStop.setOnClickListener(this);
     }
 
     private void initCodec(Size size)
@@ -77,85 +134,67 @@ public class Camera2CodecActivity extends Activity implements TextureView.Surfac
         try
         {
 
-            mMediaCodec = MediaCodec.createEncoderByType("video/avc");
-            MediaFormat format = MediaFormat.createVideoFormat("video/avc", size.getWidth(), size.getHeight());
+            MediaFormat format = MediaFormat.createVideoFormat("video/avc", 640, 480);
             int colorFormat = MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
-            int videoBitrate = 90000;
-            int videoFramePerSecond = 25;
-            int iframeInterval = 2;
+            int videoBitrate = 600000;
+            int videoFramePerSecond = 30;
+            int iframeInterval = 1;
             format.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
             format.setInteger(MediaFormat.KEY_BIT_RATE, videoBitrate);
             format.setInteger(MediaFormat.KEY_FRAME_RATE, videoFramePerSecond);
             format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, iframeInterval);
 
+            mMediaCodec = MediaCodec.createEncoderByType("video/avc");
             mMediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
             mCodecSurface = mMediaCodec.createInputSurface();
-
-            mMediaCodec.setCallback(new MediaCodec.Callback()
-            {
-                @Override
-                public void onInputBufferAvailable(MediaCodec mediaCodec, int i)
-                {
-                    Log.i("mediacodec:", "onInputBufferAcailable");
-                }
-
-                @Override
-                public void onOutputBufferAvailable(MediaCodec mediaCodec, int index, MediaCodec.BufferInfo bufferInfo)
-                {
-                    Log.i("mediacodec:", "onOutputBufferAvailable");
-
-                    try
-                    {
-
-                        ByteBuffer buffer = mediaCodec.getOutputBuffer(index);
-                        byte[] outData = new byte[bufferInfo.size];
-                        buffer.get(outData);
-
-                        if (bufferInfo.flags == MediaCodec.BUFFER_FLAG_KEY_FRAME)
-                        {
-                            configBytes = new byte[bufferInfo.size];
-                            configBytes = outData;
-                        }
-                        else if (bufferInfo.flags == MediaCodec.BUFFER_FLAG_KEY_FRAME)
-                        {
-                            byte[] keyframe = new byte[bufferInfo.size + configBytes.length];
-                            System.arraycopy(configBytes, 0, keyframe, 0, configBytes.length);
-                            System.arraycopy(outData, 0, keyframe, configBytes.length, outData.length);
-
-                            outputStream.write(keyframe, 0, keyframe.length);
-                        }
-                        else
-                        {
-                            outputStream.write(outData, 0, outData.length);
-                        }
-
-                        mMediaCodec.releaseOutputBuffer(index, false);
-
-                    }catch (IOException e)
-                    {
-                        e.printStackTrace();
-                    }
-
-                }
-
-                @Override
-                public void onError(MediaCodec mediaCodec, MediaCodec.CodecException e)
-                {
-
-                }
-
-                @Override
-                public void onOutputFormatChanged(MediaCodec mediaCodec, MediaFormat mediaFormat)
-                {
-
-                }
-            });
+            mMediaCodec.start();
 
         }catch (IOException e)
         {
             e.printStackTrace();
         }
 
+    }
+
+    private void startCodec()
+    {
+
+        Thread thread = new Thread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+
+                MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+                while (true)
+                {
+                    int outputBufferIndex = mMediaCodec.dequeueOutputBuffer(bufferInfo, -1);
+
+                    if (outputBufferIndex >= 0)
+                    {
+
+                        Log.i("dequeueOutputBuffer", "hahhahhahahhahhahah");
+                        try
+                        {
+
+                            ByteBuffer outputBuffer = mMediaCodec.getOutputBuffer(outputBufferIndex);
+                            byte[] byteBuffer = new byte[bufferInfo.size];
+                            outputBuffer.get(byteBuffer);
+                            outputStream.write(byteBuffer, 0, byteBuffer.length);
+
+                        }catch (IOException e)
+                        {
+                            e.printStackTrace();
+                        }
+
+
+                    }
+
+                }
+
+            }
+        });
+        thread.start();
     }
 
     @Override
@@ -167,7 +206,6 @@ public class Camera2CodecActivity extends Activity implements TextureView.Surfac
 
             mCamera2Util.init(width, height);
             mCamera2Util.requestPermission();
-            initCodec(mCamera2Util.getPreviewSize());
 
         }catch (CameraAccessException e)
         {
@@ -207,8 +245,6 @@ public class Camera2CodecActivity extends Activity implements TextureView.Surfac
                 {
 
                     mCamera2Util.openCamera();
-                    mCamera2Util.createCodecSession(mCodecSurface);
-                    mMediaCodec.start();
 
                 }catch (CameraAccessException e)
                 {
@@ -224,5 +260,27 @@ public class Camera2CodecActivity extends Activity implements TextureView.Surfac
         super.onDestroy();
         mMediaCodec.release();
         mCamera2Util.release();
+    }
+
+    @Override
+    public void onClick(View view)
+    {
+        switch (view.getId())
+        {
+            case R.id.btn_start:
+                try
+                {
+
+                    startCodec();
+                    mCamera2Util.startRecord();
+
+                }catch (CameraAccessException e)
+                {
+                    e.printStackTrace();
+                }
+                break;
+            case R.id.btn_stop:
+                break;
+        }
     }
 }

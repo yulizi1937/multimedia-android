@@ -9,6 +9,7 @@ import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
+import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -42,6 +43,8 @@ public class Camera2Util {
 
     private Context mContext;
     private AutoFitTextureView mTextureView;
+    private Surface mPreviewSurface;
+    private Surface encodeSurface;
     private String mCameraId;
     private CameraManager mCameraManager;
     private CameraDevice mCameraDevice;
@@ -342,14 +345,14 @@ public class Camera2Util {
          */
         SurfaceTexture texture = mTextureView.getSurfaceTexture();
         texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
-        Surface surface = new Surface(texture);
+        mPreviewSurface = new Surface(texture);
 
         ArrayList<Surface> surfaces = new ArrayList<>();
-        surfaces.add(surface);
+        surfaces.add(mPreviewSurface);
         surfaces.add(mImageReader.getSurface());
 
         mRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-        mRequestBuilder.addTarget(surface);
+        mRequestBuilder.addTarget(mPreviewSurface);
         mCameraDevice.createCaptureSession(surfaces, mSessionStateCallback, mHandler);
 
     }
@@ -363,14 +366,14 @@ public class Camera2Util {
 
         SurfaceTexture texture = mTextureView.getSurfaceTexture();
         texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
-        Surface previewSurface = new Surface(texture);
+        mPreviewSurface = new Surface(texture);
 
         ArrayList<Surface> surfaces = new ArrayList<>();
-        surfaces.add(previewSurface);
+        surfaces.add(mPreviewSurface);
         surfaces.add(mSurface);
 
         mRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-        mRequestBuilder.addTarget(previewSurface);
+        mRequestBuilder.addTarget(mPreviewSurface);
         mRequestBuilder.addTarget(mSurface);
         mCameraDevice.createCaptureSession(surfaces, mSessionStateCallback, mHandler);
 
@@ -388,14 +391,14 @@ public class Camera2Util {
 
         SurfaceTexture texture = mTextureView.getSurfaceTexture();
         texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
-        Surface surface = new Surface(texture);
+        mPreviewSurface = new Surface(texture);
 
         ArrayList<Surface> surfaces = new ArrayList<>();
-        surfaces.add(surface);
+        surfaces.add(mPreviewSurface);
         surfaces.add(mImageReader.getSurface());
 
         mRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-        mRequestBuilder.addTarget(surface);
+        mRequestBuilder.addTarget(mPreviewSurface);
         mRequestBuilder.addTarget(mImageReader.getSurface());
         mCameraDevice.createCaptureSession(surfaces, mSessionStateCallback, mHandler);
 
@@ -406,14 +409,35 @@ public class Camera2Util {
 
         SurfaceTexture texture = mTextureView.getSurfaceTexture();
         texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
-        Surface previewSurface = new Surface(texture);
+        mPreviewSurface = new Surface(texture);
+        encodeSurface = surface;
         ArrayList<Surface> surfaces = new ArrayList<>();
-        surfaces.add(previewSurface);
-        surfaces.add(surface);
+        surfaces.add(mPreviewSurface);
+        surfaces.add(encodeSurface);
 
-        mRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
-        mRequestBuilder.addTarget(previewSurface);
-        mRequestBuilder.addTarget(surface);
+        mSessionStateCallback = new CameraCaptureSession.StateCallback()
+        {
+            @Override
+            public void onConfigured(CameraCaptureSession cameraCaptureSession) {
+
+                try {
+
+                    mCameraCaptureSession = cameraCaptureSession;
+                    startRecord();
+
+                } catch (CameraAccessException e) {
+                    e.printStackTrace();
+                }
+
+
+            }
+
+            @Override
+            public void onConfigureFailed(CameraCaptureSession cameraCaptureSession) {
+
+            }
+        };
+
         mCameraDevice.createCaptureSession(surfaces, mSessionStateCallback, mHandler);
 
     }
@@ -443,7 +467,30 @@ public class Camera2Util {
     public void updatePreview() throws CameraAccessException
     {
         mPreviewRequest = mRequestBuilder.build();
-        mCameraCaptureSession.setRepeatingRequest(mPreviewRequest, null, mHandler);
+        mCameraCaptureSession.setRepeatingRequest(mPreviewRequest, new CameraCaptureSession.CaptureCallback() {
+            @Override
+            public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result)
+            {}
+        }, null);
+    }
+
+    public void startRecord() throws CameraAccessException
+    {
+
+        CaptureRequest.Builder builder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
+        builder.addTarget(mPreviewSurface);
+        builder.addTarget(encodeSurface);
+        mCameraCaptureSession.setRepeatingRequest(builder.build(), new CameraCaptureSession.CaptureCallback()
+        {
+
+            @Override
+            public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result)
+            {
+                super.onCaptureCompleted(session, request, result);
+            }
+
+        }, null);
+
     }
 
     //拍照
@@ -522,10 +569,15 @@ public class Camera2Util {
     //释放所有资源
     public void release()
     {
-        mCameraDevice.close();
-        mCameraCaptureSession.close();
-        mCameraDevice = null;
-        mCameraCaptureSession = null;
+
+        if (mCameraDevice != null)
+        {
+            mCameraDevice.close();
+            mCameraCaptureSession.close();
+            mCameraDevice = null;
+            mCameraCaptureSession = null;
+        }
+
     }
 
 }
