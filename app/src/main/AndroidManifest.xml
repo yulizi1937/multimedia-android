@@ -24,6 +24,7 @@
         <activity android:name=".VideoRecordActivity"/>
         <activity android:name=".VideoCodecActivity"/>
         <activity android:name=".Camera2CodecActivity"/>
+        <activity android:name=".ScreenRecordActivity"/>
     </application>
 
 </manifest>

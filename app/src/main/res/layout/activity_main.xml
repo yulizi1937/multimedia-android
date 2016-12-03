@@ -55,4 +55,17 @@
         android:textColor="#ffffff"
         android:textSize="16sp"/>
 
+    <TextView
+        android:id="@+id/tv_screen_shot"
+        android:layout_width="200dp"
+        android:layout_height="50dp"
+        android:background="@color/colorAccent"
+        android:layout_centerHorizontal="true"
+        android:gravity="center"
+        android:layout_below="@id/tv_codec_video"
+        android:layout_marginTop="20dp"
+        android:text="截屏"
+        android:textColor="#ffffff"
+        android:textSize="16sp"/>
+
 </RelativeLayout>

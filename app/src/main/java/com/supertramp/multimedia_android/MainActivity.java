@@ -2,6 +2,7 @@ package com.supertramp.multimedia_android;
 
 import android.app.FragmentBreadCrumbs;
 import android.content.Intent;
+import android.graphics.Camera;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -13,6 +14,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private TextView tvRecordAudio;
     private TextView tvRecordVideo;
     private TextView tvCodecVideo;
+    private TextView tvScreenShot;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -34,6 +36,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         tvRecordAudio = (TextView) findViewById(R.id.tv_record_audio);
         tvRecordVideo = (TextView) findViewById(R.id.tv_record_video);
         tvCodecVideo = (TextView) findViewById(R.id.tv_codec_video);
+        tvScreenShot = (TextView) findViewById(R.id.tv_screen_shot);
 
     }
 
@@ -48,6 +51,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         tvRecordAudio.setOnClickListener(this);
         tvRecordVideo.setOnClickListener(this);
         tvCodecVideo.setOnClickListener(this);
+        tvScreenShot.setOnClickListener(this);
     }
 
     @Override
@@ -72,6 +76,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 intent = new Intent(this, Camera2CodecActivity.class);
                 startActivity(intent);
                 break;
+            case R.id.tv_screen_shot:
+                intent = new Intent(this, ScreenRecordActivity.class);
+                startActivity(intent);
+                break;
         }
     }
+
 }
