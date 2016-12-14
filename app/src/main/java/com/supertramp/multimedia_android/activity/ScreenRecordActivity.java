@@ -1,12 +1,21 @@
-package com.supertramp.multimedia_android;
+package com.supertramp.multimedia_android.activity;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 import com.supertramp.camera2library.record.ScreenRecordUtil;
+import com.supertramp.multimedia_android.R;
+import com.supertramp.multimedia_android.service.RecordScreenService;
 
 /**
  * Created by supertramp on 16/12/1.
@@ -15,7 +24,26 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
 
     private Button btn_screenshot;
     private Button btn_screenrecord;
+    private Button btn_startservice;
     private ScreenRecordUtil mUtil;
+
+    private IBinder mIBinder;
+    private MyBRReceiver myBRReceiver;
+
+    private ServiceConnection serviceConnection = new ServiceConnection()
+    {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder)
+        {
+            mIBinder = iBinder;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName)
+        {
+
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -34,6 +62,7 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
 
         btn_screenshot = (Button) findViewById(R.id.btn_screenshot);
         btn_screenrecord = (Button) findViewById(R.id.btn_screenrecord);
+        btn_startservice = (Button) findViewById(R.id.btn_startservice);
 
     }
 
@@ -54,6 +83,12 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
 
         btn_screenshot.setOnClickListener(this);
         btn_screenrecord.setOnClickListener(this);
+        btn_startservice.setOnClickListener(this);
+
+        myBRReceiver = new MyBRReceiver();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(RecordScreenService.ACTION_SCREEN_SHOT);
+        registerReceiver(myBRReceiver, filter);
 
     }
 
@@ -78,7 +113,34 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
             case R.id.btn_screenrecord:
                 mUtil.startRecord();
                 break;
+            case R.id.btn_startservice:
+                startService();
+                break;
         }
+    }
+
+    public void startService()
+    {
+        Intent intent = new Intent(this, RecordScreenService.class);
+        startService(intent);
+    }
+
+    @Override
+    protected void onDestroy()
+    {
+        super.onDestroy();
+        unregisterReceiver(myBRReceiver);
+    }
+
+    public class MyBRReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent)
+        {
+            Toast.makeText(ScreenRecordActivity.this, "开始截屏喽!", Toast.LENGTH_SHORT).show();
+            mUtil.screenShot();
+        }
+
     }
 
 }

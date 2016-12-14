@@ -3,8 +3,10 @@ package com.supertramp.camera2library.record;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.ImageFormat;
+import android.graphics.Bitmap;
+import android.graphics.PixelFormat;
 import android.hardware.display.DisplayManager;
+import android.hardware.display.VirtualDisplay;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.MediaCodec;
@@ -30,6 +32,7 @@ public class ScreenRecordUtil {
     private Context mContext;
     private MediaProjectionManager mManager;
     private MediaProjection mProjection;
+    private VirtualDisplay mVirtualDisplay;
     private ImageReader mImageReader;
     private MediaCodec mMediaCodec;
     private Surface encodeSurface;
@@ -59,6 +62,7 @@ public class ScreenRecordUtil {
         this.mHeight = height;
         this.mDensity = density;
         mManager = (MediaProjectionManager) ((Activity)mContext).getApplication().getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+        mImageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2);
 
     }
 
@@ -82,18 +86,74 @@ public class ScreenRecordUtil {
     public void screenShot()
     {
 
-        mImageReader = ImageReader.newInstance(mWidth, mHeight, ImageFormat.JPEG, 1);
         try
         {
 
-            outputStream = new BufferedOutputStream(new FileOutputStream(new File(mContext.getExternalCacheDir(), "supertramp.jpg")));
-            mProjection.createVirtualDisplay("screen-mirror", mWidth, mHeight, mDensity, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, mImageReader.getSurface(), null, null);
+            outputStream = new BufferedOutputStream(new FileOutputStream(new File(mContext.getExternalCacheDir(), System.currentTimeMillis() + ".png")));
+            mVirtualDisplay= mProjection.createVirtualDisplay("screen-mirror", mWidth, mHeight, mDensity, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, mImageReader.getSurface(), null, null);
+
+            try
+            {
+
+                Thread.sleep(1000);
+
+            }catch (InterruptedException e)
+            {
+                e.printStackTrace();
+            }
 
             Image image = mImageReader.acquireNextImage();
-            ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-            byte[] bytes = new byte[buffer.remaining()];
-            buffer.get(bytes);
-            outputStream.write(bytes, 0, bytes.length);
+            savePicture(image);
+
+        }catch (IOException e)
+        {
+
+            e.printStackTrace();
+
+        } finally
+        {
+
+            try
+            {
+
+                outputStream.flush();
+                outputStream.close();
+
+            }catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+
+        }
+
+    }
+
+    private void savePicture(Image image)
+    {
+
+        if (image == null)
+        {
+            return;
+        }
+
+        int width = image.getWidth();
+        int height = image.getHeight();
+        final Image.Plane[] planes = image.getPlanes();
+        final ByteBuffer buffer = planes[0].getBuffer();
+        int pixelStride = planes[0].getPixelStride();
+        int rowStride = planes[0].getRowStride();
+        int rowPadding = rowStride - pixelStride * width;
+        Bitmap bitmap = Bitmap.createBitmap(width + rowPadding/pixelStride, height, Bitmap.Config.ARGB_8888);
+        bitmap.copyPixelsFromBuffer(buffer);
+        bitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height);
+        image.close();
+
+        try
+        {
+
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
+            outputStream.flush();
+            outputStream.close();
 
         }catch (IOException e)
         {
@@ -120,7 +180,7 @@ public class ScreenRecordUtil {
             mMediaCodec.start();
 
             outputStream = new BufferedOutputStream(new FileOutputStream(new File(mContext.getExternalCacheDir(), "supertramp.h264")));
-            mProjection.createVirtualDisplay("screen-mirror", mWidth, mHeight, mDensity, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, encodeSurface, null, null);
+            mVirtualDisplay = mProjection.createVirtualDisplay("screen-mirror", mWidth, mHeight, mDensity, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, encodeSurface, null, null);
 
         }catch (IOException e)
         {
@@ -144,6 +204,7 @@ public class ScreenRecordUtil {
         if (mProjection != null)
         {
             mProjection.stop();
+            mVirtualDisplay.release();
             mMediaCodec.release();
             try
             {

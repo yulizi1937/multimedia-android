@@ -1,4 +1,4 @@
-package com.supertramp.multimedia_android;
+package com.supertramp.multimedia_android.activity;
 
 import android.app.Activity;
 import android.content.pm.PackageManager;
@@ -16,7 +16,7 @@ import android.widget.Button;
 import com.supertramp.camera2library.basic.Camera2Util;
 import com.supertramp.camera2library.codec.VideoCodecUtil;
 import com.supertramp.camera2library.widget.AutoFitTextureView;
-
+import com.supertramp.multimedia_android.R;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 

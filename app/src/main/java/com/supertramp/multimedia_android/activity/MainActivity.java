@@ -1,12 +1,12 @@
-package com.supertramp.multimedia_android;
+package com.supertramp.multimedia_android.activity;
 
-import android.app.FragmentBreadCrumbs;
 import android.content.Intent;
-import android.graphics.Camera;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
+
+import com.supertramp.multimedia_android.R;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 

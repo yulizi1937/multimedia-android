@@ -7,16 +7,26 @@
         android:id="@+id/btn_screenshot"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="50dp"
         android:text="截屏"/>
 
     <Button
         android:id="@+id/btn_screenrecord"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/btn_start"
         android:layout_centerHorizontal="true"
+        android:layout_below="@id/btn_screenshot"
         android:layout_marginTop="20dp"
         android:text="录屏"/>
+
+    <Button
+        android:id="@+id/btn_startservice"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"
+        android:layout_below="@id/btn_screenrecord"
+        android:text="启动service"/>
 
 </RelativeLayout>

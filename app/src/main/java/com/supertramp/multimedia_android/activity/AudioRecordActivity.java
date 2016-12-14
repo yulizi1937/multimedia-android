@@ -1,10 +1,12 @@
-package com.supertramp.multimedia_android;
+package com.supertramp.multimedia_android.activity;
 
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
 import com.supertramp.camera2library.record.MediaRecordUtil;
+import com.supertramp.multimedia_android.R;
+
 import java.io.IOException;
 
 /**

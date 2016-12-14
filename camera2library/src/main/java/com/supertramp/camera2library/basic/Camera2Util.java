@@ -9,7 +9,6 @@ import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
-import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -27,6 +26,7 @@ import android.support.v4.content.ContextCompat;
 import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.Surface;
+import android.view.SurfaceView;
 import com.supertramp.camera2library.widget.AutoFitTextureView;
 import java.io.File;
 import java.io.IOException;
@@ -43,6 +43,7 @@ public class Camera2Util {
 
     private Context mContext;
     private AutoFitTextureView mTextureView;
+    private SurfaceView mSurfaceview;
     private Surface mPreviewSurface;
     private Surface encodeSurface;
     private String mCameraId;
@@ -93,6 +94,12 @@ public class Camera2Util {
     public Camera2Util(Context context, AutoFitTextureView textureView) {
         this.mContext = context;
         this.mTextureView = textureView;
+    }
+
+    public Camera2Util(Context context, SurfaceView surfaceView)
+    {
+        this.mContext = context;
+        this.mSurfaceview = surfaceView;
     }
 
     public Size getPreviewSize()
