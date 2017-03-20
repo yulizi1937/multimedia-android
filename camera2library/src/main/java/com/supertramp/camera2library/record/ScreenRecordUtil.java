@@ -12,6 +12,7 @@ import android.media.ImageReader;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
+import android.media.MediaRecorder;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.view.Surface;
@@ -23,7 +24,6 @@ import java.nio.ByteBuffer;
 
 /**
  * Created by supertramp on 16/12/1.
- *
  * 截屏:将ImageReader传入createVirtualDisplay
  * 录屏:将MediaCodec传入createVirtualDisplay
  */
@@ -34,6 +34,7 @@ public class ScreenRecordUtil {
     private MediaProjection mProjection;
     private VirtualDisplay mVirtualDisplay;
     private ImageReader mImageReader;
+    private MediaRecorder mMediaRecorder;
     private MediaCodec mMediaCodec;
     private Surface encodeSurface;
 
@@ -66,6 +67,72 @@ public class ScreenRecordUtil {
 
     }
 
+    //初始化MediaRecorder
+    public void initMediaRecorder()
+    {
+
+        File file = new File(mContext.getExternalCacheDir(), System.currentTimeMillis() + ".mp4");
+        mMediaRecorder = new MediaRecorder();
+        mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+        mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+        mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+        mMediaRecorder.setOutputFile(file.getAbsolutePath());
+        mMediaRecorder.setVideoSize(mWidth, mHeight);
+        mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+        mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+        mMediaRecorder.setVideoEncodingBitRate(5 * 1024 * 1024);
+        mMediaRecorder.setVideoFrameRate(30);
+
+        try
+        {
+
+            mMediaRecorder.prepare();
+
+        }catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+
+    }
+
+    //初始化MediaCodec
+    public void initMediaCodec()
+    {
+
+        MediaFormat format = MediaFormat.createVideoFormat(MIME_TYPE, mWidth, mHeight);
+        format.setInteger(MediaFormat.KEY_BIT_RATE, KEY_BIT_RATE);
+        format.setInteger(MediaFormat.KEY_COLOR_FORMAT, KEY_COLOR_FORMAT);
+        format.setInteger(MediaFormat.KEY_FRAME_RATE, KEY_FRAME_RATE);
+        format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, KEY_I_FRAME_INTERVAL);
+
+        try
+        {
+
+            mMediaCodec = MediaCodec.createEncoderByType(MIME_TYPE);
+            mMediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+            encodeSurface = mMediaCodec.createInputSurface();
+            mMediaCodec.start();
+
+            outputStream = new BufferedOutputStream(new FileOutputStream(new File(mContext.getExternalCacheDir(), "supertramp.h264")));
+            mVirtualDisplay = mProjection.createVirtualDisplay("screen-mirror", mWidth, mHeight, mDensity, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, encodeSurface, null, null);
+
+        }catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+
+        Thread mThread = new Thread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+
+            }
+        });
+        mThread.start();
+
+    }
+
     public Intent getIntent()
     {
 
@@ -82,6 +149,23 @@ public class ScreenRecordUtil {
         this.mProjection = mManager.getMediaProjection(resultCode, data);
     }
 
+    private void createVirtualDisplay()
+    {
+
+        mVirtualDisplay = mProjection.createVirtualDisplay(
+
+                "MainScreen",
+                mWidth,
+                mHeight,
+                mDensity,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+                mMediaRecorder.getSurface(),
+                null, null
+
+        );
+
+    }
+
     //截屏
     public void screenShot()
     {
@@ -90,17 +174,7 @@ public class ScreenRecordUtil {
         {
 
             outputStream = new BufferedOutputStream(new FileOutputStream(new File(mContext.getExternalCacheDir(), System.currentTimeMillis() + ".png")));
-            mVirtualDisplay= mProjection.createVirtualDisplay("screen-mirror", mWidth, mHeight, mDensity, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, mImageReader.getSurface(), null, null);
-
-            try
-            {
-
-                Thread.sleep(1000);
-
-            }catch (InterruptedException e)
-            {
-                e.printStackTrace();
-            }
+            mVirtualDisplay = mProjection.createVirtualDisplay("screen-mirror", mWidth, mHeight, mDensity, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, mImageReader.getSurface(), null, null);
 
             Image image = mImageReader.acquireNextImage();
             savePicture(image);
@@ -165,37 +239,10 @@ public class ScreenRecordUtil {
     //开始录制
     public void startRecord()
     {
-        MediaFormat format = MediaFormat.createVideoFormat(MIME_TYPE, mWidth, mHeight);
-        format.setInteger(MediaFormat.KEY_BIT_RATE, KEY_BIT_RATE);
-        format.setInteger(MediaFormat.KEY_COLOR_FORMAT, KEY_COLOR_FORMAT);
-        format.setInteger(MediaFormat.KEY_FRAME_RATE, KEY_FRAME_RATE);
-        format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, KEY_I_FRAME_INTERVAL);
 
-        try
-        {
-
-            mMediaCodec = MediaCodec.createEncoderByType(MIME_TYPE);
-            mMediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
-            encodeSurface = mMediaCodec.createInputSurface();
-            mMediaCodec.start();
-
-            outputStream = new BufferedOutputStream(new FileOutputStream(new File(mContext.getExternalCacheDir(), "supertramp.h264")));
-            mVirtualDisplay = mProjection.createVirtualDisplay("screen-mirror", mWidth, mHeight, mDensity, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, encodeSurface, null, null);
-
-        }catch (IOException e)
-        {
-            e.printStackTrace();
-        }
-
-        Thread mThread = new Thread(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-
-            }
-        });
-        mThread.start();
+        initMediaRecorder();
+        createVirtualDisplay();
+        mMediaRecorder.start();
 
     }
 
@@ -205,16 +252,31 @@ public class ScreenRecordUtil {
         {
             mProjection.stop();
             mVirtualDisplay.release();
-            mMediaCodec.release();
-            try
-            {
 
-                outputStream.close();
-
-            }catch (IOException e)
+            if (mMediaCodec != null)
             {
-                e.printStackTrace();
+                mMediaCodec.release();
             }
+
+            if (mMediaRecorder != null)
+            {
+                mMediaRecorder.stop();
+                mMediaRecorder.release();
+            }
+
+            if (outputStream != null)
+            {
+                try
+                {
+
+                    outputStream.close();
+
+                }catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+
         }
     }
 

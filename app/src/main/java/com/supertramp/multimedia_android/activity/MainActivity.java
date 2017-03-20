@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void initView()
     {
 
-        tvTakepic = (TextView) findViewById(R.id.tv_takepic);
+       // tvTakepic = (TextView) findViewById(R.id.tv_takepic);
         tvRecordAudio = (TextView) findViewById(R.id.tv_record_audio);
         tvRecordVideo = (TextView) findViewById(R.id.tv_record_video);
         tvCodecVideo = (TextView) findViewById(R.id.tv_codec_video);

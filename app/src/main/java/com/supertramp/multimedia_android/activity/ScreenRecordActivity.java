@@ -9,6 +9,7 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.MemoryFile;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.widget.Button;
@@ -16,6 +17,7 @@ import android.widget.Toast;
 import com.supertramp.camera2library.record.ScreenRecordUtil;
 import com.supertramp.multimedia_android.R;
 import com.supertramp.multimedia_android.service.RecordScreenService;
+import com.supertramp.multimedia_android.utils.FFMpegUtil;
 
 /**
  * Created by supertramp on 16/12/1.
@@ -26,6 +28,7 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
     private Button btn_screenrecord;
     private Button btn_startservice;
     private ScreenRecordUtil mUtil;
+    private FFMpegUtil mFUtils;
 
     private IBinder mIBinder;
     private MyBRReceiver myBRReceiver;
@@ -75,6 +78,9 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
         mUtil = new ScreenRecordUtil(this);
         mUtil.init(metrics.widthPixels, metrics.heightPixels, metrics.densityDpi);
         startActivityForResult(mUtil.getIntent(), ScreenRecordUtil.REQUEST_MEDIA_PROJECTION);
+
+        mFUtils = new FFMpegUtil();
+        btn_screenshot.setText("");
 
     }
 
@@ -130,6 +136,10 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
     {
         super.onDestroy();
         unregisterReceiver(myBRReceiver);
+        if (mUtil != null)
+        {
+            mUtil.release();
+        }
     }
 
     public class MyBRReceiver extends BroadcastReceiver {

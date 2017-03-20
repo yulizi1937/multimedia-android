@@ -8,6 +8,7 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -81,7 +82,7 @@ public class RecordScreenService extends Service implements View.OnClickListener
         mWindowManager = (WindowManager) getSystemService(getApplication().WINDOW_SERVICE);
         mParams.type = WindowManager.LayoutParams.TYPE_TOAST;
         mParams.format = PixelFormat.RGBA_8888;
-        mParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+        mParams.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
         mParams.gravity = Gravity.LEFT | Gravity.TOP;
         mParams.x = 0;
         mParams.y = 200;
@@ -89,11 +90,46 @@ public class RecordScreenService extends Service implements View.OnClickListener
         mParams.height = WindowManager.LayoutParams.WRAP_CONTENT;
         mInflater = LayoutInflater.from(getApplicationContext());
         mFloatLayout = (LinearLayout) mInflater.inflate(R.layout.service_float, null);
+
         mWindowManager.addView(mFloatLayout, mParams);
 
         btn_start = (Button) mFloatLayout.findViewById(R.id.btn_start);
         btn_stop = (Button) mFloatLayout.findViewById(R.id.btn_stop);
         btn_home = (Button) mFloatLayout.findViewById(R.id.btn_home);
+
+        btn_start.setOnTouchListener(new View.OnTouchListener()
+        {
+
+            int lastX, lastY;
+            int paramX, paramY;
+
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent)
+            {
+
+                switch (motionEvent.getAction())
+                {
+
+                    case MotionEvent.ACTION_DOWN:
+                        lastX = (int) motionEvent.getRawX();
+                        lastY = (int) motionEvent.getRawY();
+                        paramX = mParams.x;
+                        paramY = mParams.y;
+                        break;
+                    case MotionEvent.ACTION_MOVE:
+                        int dx = (int) motionEvent.getRawX() - lastX;
+                        int dy = (int) motionEvent.getRawY() - lastY;
+                        mParams.x = paramX + dx;
+                        mParams.y = paramY + dy;
+                        // 更新悬浮窗位置
+                        mWindowManager.updateViewLayout(mFloatLayout, mParams);
+                        break;
+
+                }
+                return false;
+
+            }
+        });
 
     }
 
